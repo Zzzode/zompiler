@@ -1,0 +1,4 @@
+# Google C/C++ Code Style settings
+
+Language: Cpp
+BasedOnStyle: Google

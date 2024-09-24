@@ -1,0 +1,59 @@
+# Build folders
+build*
+
+# Python-related
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+.env
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# mypy
+.mypy_cache/
+
+# IDE-related
+.vscode/
+.cache/
+.idea/
+*.swp
+*.swo
+
+# OS-related
+.DS_Store
+Thumbs.db
+
+# Clangd-related
+compile_commands.json

@@ -1,0 +1,1 @@
+add_library(source STATIC location.cc)
