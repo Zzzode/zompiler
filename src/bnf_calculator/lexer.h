@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "src/compiler/diagnostic/engine.h"
+#include "src/diagnostics/engine.h"
 
 namespace bnf_calculator {
 
@@ -34,8 +34,7 @@ struct Token {
 
 class Lexer {
  public:
-  Lexer(std::string input,
-        compiler::diagnostic::DiagnosticEngine& diagnosticEngine);
+  Lexer(std::string input, diagnostic::DiagnosticEngine& diagnosticEngine);
   std::vector<Token> tokenize();
 
  private:
@@ -43,7 +42,7 @@ class Lexer {
   size_t position;
   size_t line;
   size_t column;
-  compiler::diagnostic::DiagnosticEngine& diagnosticEngine;
+  diagnostic::DiagnosticEngine& diagnosticEngine;
 
   char peek() const;
   char peek(int offset) const;

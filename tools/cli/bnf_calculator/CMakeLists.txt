@@ -1,2 +1,2 @@
 add_executable(bnf_calculator_cli cli.cc)
-target_link_libraries(bnf_calculator_cli bnf_calculator diagnostic source)
+target_link_libraries(bnf_calculator_cli bnf_calculator diagnostic source zc)

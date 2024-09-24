@@ -1,6 +1,5 @@
-#include "src/compiler/diagnostic/consumer.h"
+#include "src/diagnostics/consumer.h"
 
-namespace compiler {
 namespace diagnostic {
 
 StreamDiagnosticConsumer::StreamDiagnosticConsumer(std::ostream& out)
@@ -34,4 +33,3 @@ void StreamDiagnosticConsumer::consume(const Diagnostic& diagnostic) {
 }
 
 }  // namespace diagnostic
-}  // namespace compiler

@@ -3,9 +3,8 @@
 
 #include <iostream>
 
-#include "diagnostic.h"
+#include "src/diagnostics/diagnostic.h"
 
-namespace compiler {
 namespace diagnostic {
 
 class DiagnosticConsumer {
@@ -24,6 +23,5 @@ class StreamDiagnosticConsumer : public DiagnosticConsumer {
 };
 
 }  // namespace diagnostic
-}  // namespace compiler
 
 #endif

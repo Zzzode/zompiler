@@ -4,10 +4,9 @@
 #include <memory>
 #include <vector>
 
-#include "src/compiler/diagnostic/consumer.h"
-#include "src/compiler/diagnostic/diagnostic.h"
+#include "src/diagnostics/consumer.h"
+#include "src/diagnostics/diagnostic.h"
 
-namespace compiler {
 namespace diagnostic {
 
 class DiagnosticEngine {
@@ -25,6 +24,5 @@ class DiagnosticEngine {
 };
 
 }  // namespace diagnostic
-}  // namespace compiler
 
 #endif  // COMPILER_DIAGNOSTIC_ENGINE_H

@@ -16,6 +16,7 @@ if(ZOMPILER_ENABLE_UNDEFINED_SANITIZER)
 endif()
 
 if(ZOMPILER_ENABLE_WERROR)
+  message(STATUS "Enable Werror")
   if(MSVC)
     add_compile_options(/WX)
   else()

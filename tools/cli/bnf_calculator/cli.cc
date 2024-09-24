@@ -5,9 +5,9 @@
 #include "src/bnf_calculator/calculator.h"
 #include "src/bnf_calculator/lexer.h"
 #include "src/bnf_calculator/parser.h"
-#include "src/compiler/diagnostic/engine.h"
 #include "src/compiler/source/location.h"
-#include "src/zc/base/hints.h"
+#include "src/diagnostics/engine.h"
+#include "src/zc/base/common.h"
 #include "src/zc/utility/one_of.h"
 
 using namespace bnf_calculator;
@@ -24,11 +24,18 @@ void printSet(const std::string& setName, const Calculator::SetMap& set) {
 }
 
 int main(int argc, char* argv[]) {
-  compiler::diagnostic::DiagnosticEngine diagnosticEngine;
+  diagnostic::DiagnosticEngine diagnosticEngine;
+
+  zc::OneOf<Token, Lexer> test;
+  test.init<Token>(Token(TokenType::END_OF_FILE, "", 0, 0));
+  ZC_SWITCH_ONE_OF(test) {
+    ZC_CASE_ONE_OF(token, Token) {}
+    ZC_CASE_ONE_OF_DEFAULT {}
+  }
 
   if (argc != 2) {
-    diagnosticEngine.emit(compiler::diagnostic::Diagnostic(
-        compiler::diagnostic::DiagnosticSeverity::Error,
+    diagnosticEngine.emit(diagnostic::Diagnostic(
+        diagnostic::DiagnosticSeverity::Error,
         "Usage: " + std::string(argv[0]) + " <input_file>",
         compiler::source::SourceLocation("", 0, 0)));  // Default location
     return 1;
@@ -37,11 +44,9 @@ int main(int argc, char* argv[]) {
   std::string inputFilePath = argv[1];
   std::ifstream inputFile(inputFilePath);
   if (!inputFile) ZC_UNLIKELY {
-      diagnosticEngine.emit(compiler::diagnostic::Diagnostic(
-          compiler::diagnostic::DiagnosticSeverity::Error,
-          "Unable to open input file.",
-          compiler::source::SourceLocation(inputFilePath, 0,
-                                           0)));  // Use 0 for line and column
+      diagnosticEngine.emit(diagnostic::Diagnostic(
+          diagnostic::DiagnosticSeverity::Error, "Unable to open input file.",
+          compiler::source::SourceLocation(inputFilePath, 0, 0)));
       return 1;
     }
 
@@ -74,8 +79,8 @@ int main(int argc, char* argv[]) {
     }
 
   } catch (const std::exception& e) {
-    diagnosticEngine.emit(compiler::diagnostic::Diagnostic(
-        compiler::diagnostic::DiagnosticSeverity::Error, e.what(),
+    diagnosticEngine.emit(diagnostic::Diagnostic(
+        diagnostic::DiagnosticSeverity::Error, e.what(),
         compiler::source::SourceLocation(inputFilePath, 0, 0)));
   }
 

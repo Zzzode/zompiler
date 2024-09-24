@@ -2,9 +2,10 @@
 
 #include <cctype>
 
-#include "src/compiler/diagnostic/engine.h"
 #include "src/compiler/source/location.h"
-#include "src/zc/base/hints.h"
+#include "src/diagnostics/engine.h"
+#include "src/zc/base/common.h"
+#include "src/zc/utility/one_of.h"
 
 namespace bnf_calculator {
 
@@ -15,8 +16,7 @@ const std::unordered_map<char, TokenType> Lexer::SINGLE_CHAR_TOKENS = {
     {')', TokenType::RIGHT_PAREN},
     {'=', TokenType::ASSIGN}};
 
-Lexer::Lexer(std::string input,
-             compiler::diagnostic::DiagnosticEngine& diagnosticEngine)
+Lexer::Lexer(std::string input, diagnostic::DiagnosticEngine& diagnosticEngine)
     : input(std::move(input)),
       position(0),
       line(1),
@@ -25,6 +25,7 @@ Lexer::Lexer(std::string input,
 
 std::vector<Token> Lexer::tokenize() {
   std::vector<Token> tokens;
+
   while (position < input.length()) {
     skipWhitespace();
     char current = peek();
@@ -42,8 +43,8 @@ std::vector<Token> Lexer::tokenize() {
       if (peek() == ':' && peek(1) == '=') {
         tokens.push_back(assign());
       } else {
-        diagnosticEngine.emit(compiler::diagnostic::Diagnostic(
-            compiler::diagnostic::DiagnosticSeverity::Error,
+        diagnosticEngine.emit(diagnostic::Diagnostic(
+            diagnostic::DiagnosticSeverity::Error,
             "Unexpected character: " + std::string(1, current),
             compiler::source::SourceLocation("", line, column)));
       }
@@ -52,8 +53,8 @@ std::vector<Token> Lexer::tokenize() {
     } else if (std::isalnum(current)) {
       tokens.push_back(identifier());
     } else {
-      diagnosticEngine.emit(compiler::diagnostic::Diagnostic(
-          compiler::diagnostic::DiagnosticSeverity::Error,
+      diagnosticEngine.emit(diagnostic::Diagnostic(
+          diagnostic::DiagnosticSeverity::Error,
           "Unexpected character: " + std::string(1, current),
           compiler::source::SourceLocation("", line, column)));
     }
@@ -77,8 +78,8 @@ Token Lexer::assign() {
     return Token(TokenType::ARROW, "::=", startLine, startColumn);
   }
 
-  diagnosticEngine.emit(compiler::diagnostic::Diagnostic(
-      compiler::diagnostic::DiagnosticSeverity::Error, "Expected '>' after '='",
+  diagnosticEngine.emit(diagnostic::Diagnostic(
+      diagnostic::DiagnosticSeverity::Error, "Expected '>' after '='",
       compiler::source::SourceLocation("", startLine, startColumn)));
   // Return a default token to avoid compilation error
   return Token(TokenType::ARROW, "", startLine, startColumn);
@@ -124,9 +125,8 @@ Token Lexer::nonterminal() {
     advance();
   }
   if (peek() != '>') {
-    diagnosticEngine.emit(compiler::diagnostic::Diagnostic(
-        compiler::diagnostic::DiagnosticSeverity::Error,
-        "Unterminated nonterminal",
+    diagnosticEngine.emit(diagnostic::Diagnostic(
+        diagnostic::DiagnosticSeverity::Error, "Unterminated nonterminal",
         compiler::source::SourceLocation("", line, startColumn)));
   }
   advance();  // Skip '>'
@@ -142,8 +142,8 @@ Token Lexer::terminal() {
     advance();
   }
   if (peek() != '"') {
-    diagnosticEngine.emit(compiler::diagnostic::Diagnostic(
-        compiler::diagnostic::DiagnosticSeverity::Error, "Unterminated string",
+    diagnosticEngine.emit(diagnostic::Diagnostic(
+        diagnostic::DiagnosticSeverity::Error, "Unterminated string",
         compiler::source::SourceLocation("", line, startColumn)));
   }
   advance();  // Skip closing quote

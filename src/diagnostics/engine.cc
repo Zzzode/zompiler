@@ -1,6 +1,5 @@
-#include "src/compiler/diagnostic/engine.h"
+#include "src/diagnostics/engine.h"
 
-namespace compiler {
 namespace diagnostic {
 
 DiagnosticEngine::DiagnosticEngine() : errors(false) {
@@ -23,4 +22,3 @@ void DiagnosticEngine::emit(Diagnostic diagnostic) {
 bool DiagnosticEngine::hasErrors() const { return errors; }
 
 }  // namespace diagnostic
-}  // namespace compiler

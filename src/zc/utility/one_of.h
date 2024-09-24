@@ -1,10 +1,45 @@
-// Copyright 2023 The Vmsdk Authors. All rights reserved.
+// Copyright (c) 2013-2014 Sandstorm Development Group, Inc. and contributors
+// Licensed under the MIT License:
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+//
+// Copyright (c) 2024 Zode.Z. All rights reserved
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
 
 #ifndef ZC_UTILITY_ONE_OF_
 #define ZC_UTILITY_ONE_OF_
 
 #include <algorithm>
 #include <cstdint>
+
+#include "src/zc/base/common.h"
 
 namespace zc {
 
@@ -48,6 +83,7 @@ template <typename T>
 using Decay = typename Decay_<T>::Type;
 
 namespace _ {
+
 struct PlacementNew {};
 
 }  // namespace _
@@ -65,7 +101,7 @@ namespace zc {
 // and free, thus we override new and delete operator
 template <typename T, typename... Params>
 inline void ctor(T &location, Params &&...params) {
-  new (_::PlacementNew(), &location) T(std::forward<Params>(params)...);
+  new (_::PlacementNew(), &location) T(zc::fwd<Params>(params)...);
 }
 
 template <typename T>
@@ -74,6 +110,7 @@ inline void dtor(T &location) {
 }
 
 namespace _ {
+
 template <uint32_t i, template <uint32_t> class Fail, typename Key,
           typename... Variants>
 struct TypeIndex_;
@@ -115,23 +152,105 @@ struct SuccessIfNotZero<0> {};
 enum class Variants0 {};
 enum class Variants1 { _variant0 };
 enum class Variants2 { _variant0, _variant1 };
+enum class Variants3 { _variant0, _variant1, _variant2 };
+enum class Variants4 { _variant0, _variant1, _variant2, _variant3 };
+enum class Variants5 { _variant0, _variant1, _variant2, _variant3, _variant4 };
+enum class Variants6 {
+  _variant0,
+  _variant1,
+  _variant2,
+  _variant3,
+  _variant4,
+  _variant5
+};
+enum class Variants7 {
+  _variant0,
+  _variant1,
+  _variant2,
+  _variant3,
+  _variant4,
+  _variant5,
+  _variant6
+};
+enum class Variants8 {
+  _variant0,
+  _variant1,
+  _variant2,
+  _variant3,
+  _variant4,
+  _variant5,
+  _variant6,
+  _variant7
+};
+enum class Variants9 {
+  _variant0,
+  _variant1,
+  _variant2,
+  _variant3,
+  _variant4,
+  _variant5,
+  _variant6,
+  _variant7,
+  _variant8
+};
+enum class Variants10 {
+  _variant0,
+  _variant1,
+  _variant2,
+  _variant3,
+  _variant4,
+  _variant5,
+  _variant6,
+  _variant7,
+  _variant8,
+  _variant9
+};
 
 template <uint32_t i>
 struct Variants_;
-
 template <>
 struct Variants_<0> {
   typedef Variants0 Type;
 };
-
 template <>
 struct Variants_<1> {
   typedef Variants1 Type;
 };
-
 template <>
 struct Variants_<2> {
   typedef Variants2 Type;
+};
+template <>
+struct Variants_<3> {
+  typedef Variants3 Type;
+};
+template <>
+struct Variants_<4> {
+  typedef Variants4 Type;
+};
+template <>
+struct Variants_<5> {
+  typedef Variants5 Type;
+};
+template <>
+struct Variants_<6> {
+  typedef Variants6 Type;
+};
+template <>
+struct Variants_<7> {
+  typedef Variants7 Type;
+};
+template <>
+struct Variants_<8> {
+  typedef Variants8 Type;
+};
+template <>
+struct Variants_<9> {
+  typedef Variants9 Type;
+};
+template <>
+struct Variants_<10> {
+  typedef Variants10 Type;
 };
 
 template <uint32_t i>
@@ -170,7 +289,7 @@ class OneOf {
   // OneOf.
   template <typename T, typename = typename HasAll<0, Decay<T>>::Success>
   OneOf(T &&other) : tag_(typeIndex<Decay<T>>()) {
-    ctor(*reinterpret_cast<Decay<T> *>(space), std::forward<T>(other));
+    ctor(*reinterpret_cast<Decay<T> *>(space), zc::fwd<T>(other));
   }
 
   ~OneOf() { destroy(); }
@@ -195,35 +314,75 @@ class OneOf {
 
   template <typename T>
   T &get() & {
-    WASM_DCHECK(is<T>() && "Must check OneOf::is<T>() before calling get<T>()");
+    ZC_IREQUIRE(is<T>() && "Must check OneOf::is<T>() before calling get<T>()");
     return *reinterpret_cast<T *>(space);
   }
 
   template <typename T>
   T &&get() && {
-    WASM_DCHECK(is<T>() && "Must check OneOf::is<T>() before calling get<T>()");
-    return std::move(*reinterpret_cast<T *>(space));
+    ZC_IREQUIRE(is<T>() && "Must check OneOf::is<T>() before calling get<T>()");
+    return zc::mv(*reinterpret_cast<T *>(space));
   }
 
   template <typename T>
   const T &get() const & {
-    WASM_DCHECK(is<T>() && "Must check OneOf::is<T>() before calling get<T>()");
+    ZC_IREQUIRE(is<T>() && "Must check OneOf::is<T>() before calling get<T>()");
     return *reinterpret_cast<const T *>(space);
   }
 
   template <typename T>
   const T &&get() const && {
-    WASM_DCHECK(is<T>() && "Must check OneOf::is<T>() before calling get<T>()");
-    return std::move(*reinterpret_cast<const T *>(space));
+    ZC_IREQUIRE(is<T>() && "Must check OneOf::is<T>() before calling get<T>()");
+    return zc::mv(*reinterpret_cast<const T *>(space));
   }
 
   template <typename T, typename... Params>
   T &init(Params &&...params) {
     if (tag_ != 0) destroy();
-    ctor(*reinterpret_cast<T *>(space), std::forward<Params>(params)...);
+    ctor(*reinterpret_cast<T *>(space), zc::fwd<Params>(params)...);
     tag_ = typeIndex<T>();
     return *reinterpret_cast<T *>(space);
   }
+
+  template <typename T>
+  Maybe<T &> tryGet() {
+    if (is<T>()) {
+      return *reinterpret_cast<T *>(space);
+    } else {
+      return zc::none;
+    }
+  }
+  template <typename T>
+  Maybe<const T &> tryGet() const {
+    if (is<T>()) {
+      return *reinterpret_cast<const T *>(space);
+    } else {
+      return zc::none;
+    }
+  }
+
+  template <uint32_t i>
+  ZC_NORETURN void allHandled();
+  // After a series of if/else blocks handling each variant of the OneOf, have
+  // the final else block call allHandled<n>() where n is the number of
+  // variants. This will fail to compile if new variants are added in the
+  // future.
+
+  using Tag = _::Variants<sizeof...(Variants)>;
+
+  Tag which() const {
+    ZC_IREQUIRE(tag_ != 0, "Can't ZC_SWITCH_ONEOF() on uninitialized value.");
+    return static_cast<Tag>(tag_ - 1);
+  }
+
+  template <typename T>
+  static constexpr Tag tagFor() {
+    return static_cast<Tag>(typeIndex<T>() - 1);
+  }
+
+  OneOf *_switchSubject() & { return this; }
+  const OneOf *_switchSubject() const & { return this; }
+  _::NullableValue<OneOf> _switchSubject() && { return zc::mv(*this); }
 
  private:
   uint32_t tag_;
@@ -286,7 +445,7 @@ class OneOf {
   template <typename T>
   inline bool moveVariantFrom(OneOf &other) {
     if (other.is<T>()) {
-      ctor(*reinterpret_cast<T *>(space), std::move(other.get<T>()));
+      ctor(*reinterpret_cast<T *>(space), zc::mv(other.get<T>()));
     }
     return false;
   }
@@ -307,6 +466,79 @@ struct OneOf<Variants...>::HasAll<i, First, Rest...>
 template <typename... Variants>
 template <uint32_t i>
 struct OneOf<Variants...>::HasAll<i> : public _::SuccessIfNotZero<i> {};
+
+template <typename... Variants>
+template <uint32_t i>
+void OneOf<Variants...>::allHandled() {
+  // After a series of if/else blocks handling each variant of the OneOf, have
+  // the final else block call allHandled<n>() where n is the number of
+  // variants. This will fail to compile if new variants are added in the
+  // future.
+
+  static_assert(i == sizeof...(Variants),
+                "new OneOf variants need to be handled here");
+  ZC_UNREACHABLE;
+}
+
+#define ZC_SWITCH_ONE_OF(value)                               \
+  switch (auto _zc_switch_subject = (value)._switchSubject(); \
+          _zc_switch_subject->which())
+#if !_MSC_VER || defined(__clang__)
+#define ZC_CASE_ONE_OF(name, ...)                                      \
+  break;                                                               \
+  case ::zc::Decay<decltype(*_zc_switch_subject)>::template tagFor<    \
+      __VA_ARGS__>():                                                  \
+    for (auto &name = _zc_switch_subject->template get<__VA_ARGS__>(), \
+              *_zc_switch_done = &name;                                \
+         _zc_switch_done; _zc_switch_done = nullptr)
+#else
+// TODO(msvc): The latest MSVC which ships with VS2019 now ICEs on the
+// implementation above. It appears we can hack around the problem by moving the
+// `->template get<>()` syntax to an outer `if`. (This unfortunately allows
+// wonky syntax like `ZC_CASE_ONE_OF(a, B) { } else { }`.)
+// https://developercommunity.visualstudio.com/content/problem/1143733/internal-compiler-error-on-v1670.html
+#define ZC_CASE_ONE_OF(name, ...)                                   \
+  break;                                                            \
+  case ::zc::Decay<decltype(*_zc_switch_subject)>::template tagFor< \
+      __VA_ARGS__>():                                               \
+    if (auto *_zc_switch_done =                                     \
+            &_zc_switch_subject->template get<__VA_ARGS__>())       \
+      for (auto &name = *_zc_switch_done; _zc_switch_done;          \
+           _zc_switch_done = nullptr)
+#endif
+#define ZC_CASE_ONE_OF_DEFAULT \
+  break;                       \
+  default:
+
+// Allows switching over a OneOf.
+//
+// Example:
+//
+//     zc::OneOf<int, float, const char*> variant;
+//     ZC_SWITCH_ONE_OF(variant) {
+//       ZC_CASE_ONE_OF(i, int) {
+//         doSomethingWithInt(i);
+//       }
+//       ZC_CASE_ONE_OF(s, const char*) {
+//         doSomethingWithString(s);
+//       }
+//       ZC_CASE_ONE_OF_DEFAULT {
+//         doSomethingElse();
+//       }
+//     }
+//
+// Notes:
+// - If you don't handle all possible types and don't include a default branch,
+//   you'll get a compiler warning, just like a regular switch() over an enum
+//   where one of the enum values is missing.
+// - There's no need for a `break` statement in a ZC_CASE_ONE_OF; it is implied.
+//
+// Implementation notes:
+// - The use of __VA_ARGS__ is to account for template types that have commas
+//   separating type parameters, since macros don't recognize <> as grouping.
+// - _zc_switch_done is really used as a boolean flag to prevent the for() loop
+//   from actually looping, but it's defined as a pointer since that's all we
+//   can define in this context.
 
 }  // namespace zc
 
