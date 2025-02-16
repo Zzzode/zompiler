@@ -14,9 +14,6 @@
 
 #include "zomlang/compiler/source/manager.h"
 
-#include <unordered_map>
-
-#include "zc/core/debug.h"
 #include "zomlang/compiler/source/module.h"
 
 namespace zomlang {
