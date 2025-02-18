@@ -25,11 +25,11 @@ class SourceManager;
 
 class Module {
 public:
-  Module(zc::Own<SourceManager>, zc::StringPtr moduleName, uint64_t id) noexcept;
+  Module(zc::StringPtr moduleName, uint64_t id) noexcept;
   ~Module() noexcept(false);
 
   /// Creates a new module from the given file.
-  static zc::Own<Module> create(zc::Own<SourceManager> sm, zc::StringPtr moduleName, uint64_t id);
+  static zc::Own<Module> create(zc::StringPtr moduleName, uint64_t id);
 
   /// Returns the source name of this module.
   zc::StringPtr getModuleName();
@@ -39,6 +39,8 @@ public:
   ZC_NODISCARD uint64_t getModuleId() const;
   /// Returns the source manager.
   SourceManager& getSourceManager();
+  /// Marks the module as compiled.
+  void markCompiled();
 
   bool operator==(const Module& rhs) const { return getModuleId() == rhs.getModuleId(); }
   bool operator!=(const Module& rhs) const { return getModuleId() != rhs.getModuleId(); }
@@ -57,7 +59,6 @@ public:
 
   /// Loads a module from the given path.
   zc::Maybe<const Module&> loadModule(const zc::ReadableDirectory& dir, zc::PathPtr path);
-  zc::Maybe<const Module&> loadModule(zc::StringPtr path);
 
 private:
   class Impl;

@@ -20,8 +20,6 @@
 namespace zomlang {
 namespace compiler {
 
-class Diagnostic;
-
 namespace source {
 class Module;
 }

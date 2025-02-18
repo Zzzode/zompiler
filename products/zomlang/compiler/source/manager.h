@@ -19,32 +19,26 @@
 #include "zc/core/memory.h"
 #include "zc/core/string.h"
 #include "zomlang/compiler/diagnostics/diagnostic.h"
-#include "zomlang/compiler/source/location.h"
 
 namespace zomlang {
 namespace compiler {
 namespace source {
 
-class Module;
+class SourceLoc;
+class SourceRange;
 
-struct LineAndColumn {
-  unsigned line;
-  unsigned column;
-  LineAndColumn(const unsigned l, const unsigned c) : line(l), column(c) {}
-};
+struct LineAndColumn;
 
 class SourceManager {
 public:
-  explicit SourceManager(const zc::Filesystem& disk, zc::Own<const zc::ReadableFile> file,
-                         const zc::ReadableDirectory& sourceDir, zc::Path path) noexcept;
+  SourceManager() noexcept;
   ~SourceManager() noexcept(false);
 
   ZC_DISALLOW_COPY_AND_MOVE(SourceManager);
 
   // Buffer management
-  uint64_t addNewSourceBuffer(zc::Own<zc::InputStream> input, zc::Own<Module> module);
-  uint64_t addMemBufferCopy(zc::ArrayPtr<const zc::byte> inputData,
-                            const zc::StringPtr& bufIdentifier, Module* module);
+  uint64_t addNewSourceBuffer(zc::Array<zc::byte> inputData, zc::StringPtr bufIdentifier);
+  uint64_t addMemBufferCopy(zc::ArrayPtr<const zc::byte> inputData, zc::StringPtr bufIdentifier);
 
   // Virtual file management
   void createVirtualFile(const SourceLoc& loc, zc::StringPtr name, int lineOffset, unsigned length);
@@ -54,7 +48,10 @@ public:
   void setGeneratedSourceInfo(uint64_t bufferId, const struct GeneratedSourceInfo& info);
   const struct GeneratedSourceInfo* getGeneratedSourceInfo(uint64_t bufferId) const;
 
-  // Location and range operations
+  /// Returns the offset in bytes for the given valid source location.
+  unsigned getLocOffsetInBuffer(SourceLoc Loc, uint64_t bufferId) const;
+
+  /// Location and range operations
   SourceLoc getLocForOffset(uint64_t bufferId, unsigned offset) const;
   LineAndColumn getLineAndColumn(const SourceLoc& loc) const;
   unsigned getLineNumber(const SourceLoc& loc) const;
@@ -78,12 +75,12 @@ public:
   SourceLoc getLocForLineCol(uint64_t bufferId, unsigned line, unsigned col) const;
 
   // External source support
-  uint64_t getExternalSourceBufferID(const zc::StringPtr& path);
-  SourceLoc getLocFromExternalSource(const zc::StringPtr& path, unsigned line, unsigned col);
+  uint64_t getExternalSourceBufferID(zc::StringPtr path);
+  SourceLoc getLocFromExternalSource(zc::StringPtr path, unsigned line, unsigned col);
 
   // Diagnostics
-  void getMessage(const SourceLoc& loc, DiagnosticKind kind, const zc::String& msg,
-                  zc::ArrayPtr<SourceRange> ranges, zc::ArrayPtr<FixIt> fixIts,
+  void getMessage(const SourceLoc& loc, diagnostics::DiagnosticKind kind, zc::StringPtr msg,
+                  zc::ArrayPtr<SourceRange> ranges, zc::ArrayPtr<diagnostics::FixIt> fixIts,
                   zc::OutputStream& os) const;
 
   // Verification
@@ -92,10 +89,6 @@ public:
   // Regex literal support
   void recordRegexLiteralStartLoc(const SourceLoc& loc);
   bool isRegexLiteralStart(const SourceLoc& loc) const;
-
-  // Module management
-  void setModuleForBuffer(uint64_t bufferId, zc::Own<Module> module);
-  zc::Maybe<const Module&> getModuleForBuffer(uint64_t bufferId) const;
 
 private:
   class Impl;

@@ -95,53 +95,51 @@ struct FileKeyHash {
 
 class Module::Impl {
 public:
-  Impl(zc::Own<SourceManager> sm, zc::StringPtr moduleName, uint64_t id) noexcept;
-
+  Impl(zc::StringPtr moduleName, uint64_t id) noexcept;
   ~Impl() noexcept(false) = default;
+
+  ZC_DISALLOW_COPY_AND_MOVE(Impl);
 
   /// Returns the source name of this module.
   zc::StringPtr getModuleName();
-
   /// Returns true if this module is compiled.
   ZC_NODISCARD bool isCompiled() const;
-
   /// Retrieves the unique ID of the module
   ZC_NODISCARD uint64_t getModuleId() const;
+  void markCompiled();
 
 private:
-  zc::Own<SourceManager> sourceManager;
-
   zc::String moduleName;
   const uint64_t moduleId;
 
   bool compiled;
 };
 
-Module::Impl::Impl(zc::Own<SourceManager> sm, zc::StringPtr moduleName, const uint64_t id) noexcept
-    : sourceManager(zc::mv(sm)), moduleName(zc::str(moduleName)), moduleId(id), compiled(false) {
+Module::Impl::Impl(zc::StringPtr moduleName, const uint64_t id) noexcept
+    : moduleName(zc::str(moduleName)), moduleId(id), compiled(false) {
   ZC_REQUIRE(moduleName.size() > 0);
 }
 
 zc::StringPtr Module::Impl::getModuleName() { return moduleName; }
-
 bool Module::Impl::isCompiled() const { return compiled; }
-
 uint64_t Module::Impl::getModuleId() const { return moduleId; }
+void Module::Impl::markCompiled() { compiled = true; }
 
 // ================================================================================
 // Module
 
-Module::Module(zc::Own<SourceManager> sm, zc::StringPtr moduleName, uint64_t id) noexcept
-    : impl(zc::heap<Impl>(zc::mv(sm), moduleName, id)) {};
+Module::Module(zc::StringPtr moduleName, uint64_t id) noexcept
+    : impl(zc::heap<Impl>(moduleName, id)) {};
 Module::~Module() noexcept(false) = default;
 
 // static
-zc::Own<Module> Module::create(zc::Own<SourceManager> sm, zc::StringPtr moduleName, uint64_t id) {
-  return zc::heap<Module>(zc::mv(sm), moduleName, id);
+zc::Own<Module> Module::create(zc::StringPtr moduleName, uint64_t id) {
+  return zc::heap<Module>(moduleName, id);
 }
 zc::StringPtr Module::getModuleName() { return impl->getModuleName(); }
 bool Module::isCompiled() const { return impl->isCompiled(); }
 uint64_t Module::getModuleId() const { return impl->getModuleId(); }
+void Module::markCompiled() { impl->markCompiled(); }
 
 // ================================================================================
 // ModuleLoader
@@ -154,21 +152,12 @@ ModuleLoader::~ModuleLoader() noexcept(false) = default;
 
 class ModuleLoader::Impl {
 public:
-  Impl() noexcept : disk(zc::newDiskFilesystem()), nextModuleId(0) {}
+  Impl() noexcept : nextModuleId(0) {}
   ~Impl() noexcept(false) = default;
 
-  struct ModulePath {
-    const zc::ReadableDirectory& dir;
-    zc::Path path;
-  };
-
-  ZC_NODISCARD ModulePath getDirWithPath(zc::StringPtr filePath) const;
-
-  zc::Maybe<const Module&> loadModule(zc::StringPtr pathStr);
   zc::Maybe<const Module&> loadModule(const zc::ReadableDirectory& dir, zc::PathPtr path);
 
 private:
-  zc::Own<zc::Filesystem> disk;
   std::unordered_map<FileKey, zc::Own<Module>, FileKeyHash> modules;
   uint64_t nextModuleId;
 };
@@ -178,33 +167,15 @@ zc::Maybe<const Module&> ModuleLoader::loadModule(const zc::ReadableDirectory& d
   return impl->loadModule(dir, path);
 }
 
-zc::Maybe<const Module&> ModuleLoader::loadModule(const zc::StringPtr path) {
-  return impl->loadModule(path);
-}
-
-ModuleLoader::Impl::ModulePath ModuleLoader::Impl::getDirWithPath(
-    const zc::StringPtr filePath) const {
-  const zc::PathPtr cwd = disk->getCurrentPath();
-  zc::Path path = cwd.evalNative(filePath);
-
-  ZC_REQUIRE(path.size() > 0);
-  zc::Path sourcePath =
-      path.startsWith(cwd) ? path.slice(cwd.size(), path.size()).clone() : zc::mv(path);
-  const zc::ReadableDirectory& dir = path.startsWith(cwd) ? disk->getCurrent() : disk->getRoot();
-
-  return ModulePath{dir, zc::mv(sourcePath)};
-}
-
 zc::Maybe<const Module&> ModuleLoader::Impl::loadModule(const zc::ReadableDirectory& dir,
                                                         zc::PathPtr path) {
   ZC_IF_SOME(file, dir.tryOpenFile(path)) {
-    zc::Path pathCopy = path.clone();
+    const zc::Path pathCopy = path.clone();
     auto key = FileKey(dir, pathCopy, *file);
     if (const auto it = modules.find(key); it != modules.end()) { return *it->second; }
 
     const uint64_t id = nextModuleId++;
-    zc::Own<SourceManager> sm = zc::heap<SourceManager>(*disk, zc::mv(file), dir, zc::mv(pathCopy));
-    zc::Own<Module> module = Module::create(zc::mv(sm), path.toString(), id);
+    zc::Own<Module> module = Module::create(path.toString(), id);
 
     auto& result = *module;
     const auto [fst, snd] = modules.insert(std::make_pair(zc::mv(key), zc::mv(module)));
@@ -214,11 +185,6 @@ zc::Maybe<const Module&> ModuleLoader::Impl::loadModule(const zc::ReadableDirect
   }
 
   return zc::none;
-}
-
-zc::Maybe<const Module&> ModuleLoader::Impl::loadModule(const zc::StringPtr pathStr) {
-  const auto [dir, path] = getDirWithPath(pathStr);
-  return loadModule(dir, path);
 }
 
 }  // namespace source

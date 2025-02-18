@@ -12,8 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef ZOM_SOURCE_LOCATION_H_
-#define ZOM_SOURCE_LOCATION_H_
+#pragma once
 
 #include "zc/core/io.h"
 #include "zc/core/source-location.h"
@@ -21,44 +20,39 @@
 
 namespace zomlang {
 namespace compiler {
+namespace source {
 
 class SourceLoc {
 public:
-  SourceLoc() : value(0) {}
+  SourceLoc() : ptr(nullptr) {}
+  explicit SourceLoc(const zc::byte* p) : ptr(p) {}
 
-  ZC_NODISCARD bool isValid() const { return value != 0; }
+  ZC_NODISCARD bool isValid() const { return ptr != nullptr; }
   ZC_NODISCARD bool isInvalid() const { return !isValid(); }
 
-  ZC_NODISCARD unsigned getOpaqueValue() const { return value; }
-  static SourceLoc getFromOpaqueValue(const unsigned value) {
-    SourceLoc loc;
-    loc.value = value;
-    return loc;
-  }
+  ZC_NODISCARD const zc::byte* getOpaqueValue() const { return ptr; }
+  static SourceLoc getFromOpaqueValue(const zc::byte* ptr) { return SourceLoc(ptr); }
 
   ZC_NODISCARD SourceLoc getAdvancedLoc(unsigned offset) const {
     return getFromOpaqueValue(getOpaqueValue() + offset);
   }
 
   ZC_NODISCARD zc::String toString() const {
-    if (isValid()) {
-      return zc::str("SourceLoc(file_id=", getOpaqueValue() >> 24,
-                     " offset=", getOpaqueValue() & 0xFFFFFF, ")");
-    }
+    if (isValid()) { return zc::str("SourceLoc(ptr=0x", zc::ptrToString(ptr), ")"); }
     return zc::str("SourceLoc(invalid)");
   }
 
   void print(zc::OutputStream& os) const { os.write(toString().asBytes()); }
 
-  bool operator==(const SourceLoc& rhs) const { return value == rhs.value; }
+  bool operator==(const SourceLoc& rhs) const { return ptr == rhs.ptr; }
   bool operator!=(const SourceLoc& rhs) const { return !operator==(rhs); }
-  bool operator<(const SourceLoc& rhs) const { return value < rhs.value; }
-  bool operator<=(const SourceLoc& rhs) const { return value <= rhs.value; }
-  bool operator>(const SourceLoc& rhs) const { return value > rhs.value; }
-  bool operator>=(const SourceLoc& rhs) const { return value >= rhs.value; }
+  bool operator<(const SourceLoc& rhs) const { return ptr < rhs.ptr; }
+  bool operator<=(const SourceLoc& rhs) const { return ptr <= rhs.ptr; }
+  bool operator>(const SourceLoc& rhs) const { return ptr > rhs.ptr; }
+  bool operator>=(const SourceLoc& rhs) const { return ptr >= rhs.ptr; }
 
 private:
-  unsigned value;
+  const zc::byte* ptr;
 };
 
 class SourceRange {
@@ -135,25 +129,21 @@ private:
   SourceLoc end;
   bool isTokenRange{false};
 
-  static SourceLoc computeEnd(SourceLoc start, unsigned length) {
+  static SourceLoc computeEnd(const SourceLoc start, const unsigned length) {
     ZC_IREQUIRE(!start.isInvalid(), "Invalid start location.");
     ZC_IREQUIRE(length > 0, "Length must be greater than zero.");
 
-    unsigned startvalue = start.getOpaqueValue();
-    unsigned endvalue = startvalue + length;
+    const zc::byte* startvalue = start.getOpaqueValue();
+    const zc::byte* endvalue = startvalue + length;
 
-    // Check for overflow
+    // Check only pointer overflows (such as reverse offsets)
     ZC_IREQUIRE(endvalue >= startvalue, "Overflow in length calculation.");
-
-    // Check if the end position is within valid range
-    // Assuming SourceLoc uses 24 bits for offset
-    ZC_IREQUIRE(endvalue <= 0xFFFFFF, "End position exceeds valid range.");
 
     return SourceLoc::getFromOpaqueValue(endvalue);
   }
 };
 
-// 使用 zc::SourceLocation 来表示编译时的源代码位置
+/// Use zc::SourceLocation to indicate the source code location at compile time
 using CompileTimeSourceLocation = zc::SourceLocation;
 
 inline zc::String ZC_STRINGIFY(const CompileTimeSourceLocation& loc) {
@@ -161,7 +151,6 @@ inline zc::String ZC_STRINGIFY(const CompileTimeSourceLocation& loc) {
                  ", Column: ", loc.columnNumber);
 }
 
+}  // namespace source
 }  // namespace compiler
 }  // namespace zomlang
-
-#endif  // ZOM_SOURCE_LOCATION_H_

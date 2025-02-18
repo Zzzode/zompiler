@@ -1,3 +1,3 @@
-file(GLOB DIAGNOSTICS_SRC diagnostic.cc diagnostic-state.cc)
+file(GLOB DIAGNOSTICS_SRC diagnostic.cc diagnostic-state.cc diagnostic-engine.cc)
 
 add_library(diagnostics STATIC ${DIAGNOSTICS_SRC})
