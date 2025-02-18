@@ -1,5 +1,4 @@
-#ifndef ZOM_DIAGNOSTICS_IN_FLIGHT_DIAGNOSTIC_H_
-#define ZOM_DIAGNOSTICS_IN_FLIGHT_DIAGNOSTIC_H_
+#pragma once
 
 #include "zc/core/common.h"
 #include "zomlang/compiler/diagnostics/diagnostic-engine.h"
@@ -8,43 +7,42 @@
 
 namespace zomlang {
 namespace compiler {
+namespace diagnostics {
 
 class InFlightDiagnostic {
 public:
-  InFlightDiagnostic(DiagnosticEngine& engine, SourceLoc loc, Diagnostic&& diag)
-      : engine_(&engine), loc_(loc), diag_(zc::mv(diag)), emitted_(false) {}
+  InFlightDiagnostic(DiagnosticEngine& engine, source::SourceLoc loc, Diagnostic&& diag)
+      : engine(engine), loc(loc), diag(zc::mv(diag)), emitted(false) {}
 
-  // 添加移动构造函数和移动赋值运算符
   InFlightDiagnostic(InFlightDiagnostic&& other) noexcept = default;
-  InFlightDiagnostic& operator=(InFlightDiagnostic&& other) noexcept = default;
+  InFlightDiagnostic& operator=(InFlightDiagnostic&& other) noexcept = delete;
 
   ZC_DISALLOW_COPY(InFlightDiagnostic);
 
   ~InFlightDiagnostic() {
-    if (!emitted_) { emit(); }
+    if (!emitted) { emit(); }
   }
 
   void emit() {
-    if (!emitted_) {
-      engine_->emit(loc_, zc::mv(diag_));
-      emitted_ = true;
+    if (!emitted) {
+      engine.emit(loc, zc::mv(diag));
+      emitted = true;
     }
   }
 
-  // Add methods to modify the diagnostic, e.g., add fix-its
-  InFlightDiagnostic& addFixIt(const FixIt& fixit) {
-    diag_.addFixIt(fixit);
+  // Add methods to modify the diagnostic, for example, add fix-its
+  InFlightDiagnostic& addFixIt(zc::Own<FixIt> fixit) {
+    diag.addFixIt(zc::mv(fixit));
     return *this;
   }
 
 private:
-  DiagnosticEngine* engine_;
-  SourceLoc loc_;
-  Diagnostic diag_;
-  bool emitted_;
+  DiagnosticEngine& engine;
+  source::SourceLoc loc;
+  Diagnostic diag;
+  bool emitted;
 };
 
+}  // namespace diagnostics
 }  // namespace compiler
 }  // namespace zomlang
-
-#endif  // ZOM_DIAGNOSTICS_IN_FLIGHT_DIAGNOSTIC_H_

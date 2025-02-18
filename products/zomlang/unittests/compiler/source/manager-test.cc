@@ -16,7 +16,6 @@
 
 #include "zc/core/common.h"
 #include "zc/core/string.h"
-#include "zc/ztest/gtest.h"
 #include "zc/ztest/test.h"
 #include "zomlang/compiler/source/module.h"
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Zode.Z. All rights reserved
+// Copyright (c) 2024-2025 Zode.Z. All rights reserved
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 #include "zc/core/filesystem.h"
 #include "zomlang/compiler/basic/frontend.h"
+#include "zomlang/compiler/diagnostics/diagnostic-engine.h"
 #include "zomlang/compiler/source/manager.h"
 #include "zomlang/compiler/source/module.h"
 
@@ -23,7 +24,8 @@ namespace zomlang {
 namespace compiler {
 namespace driver {
 
-// ========== CompilerDriver::Impl
+// ================================================================================
+// CompilerDriver::Impl
 
 class CompilerDriver::Impl {
 public:
@@ -45,19 +47,29 @@ public:
   zc::Maybe<const source::Module&> addSourceFileImpl(zc::StringPtr file);
 
 private:
+  /// Module loader to transform sources to a module representation.
   zc::Own<source::ModuleLoader> loader;
-  zc::Vector<OutputDirective> outputs;
+  /// Source manager to manage source files.
+  zc::Own<source::SourceManager> sourceManager;
+  /// Diagnostic engine to report diagnostics.
+  zc::Own<diagnostics::DiagnosticEngine> diagnosticEngine;
 };
 
-CompilerDriver::Impl::Impl() noexcept : loader(zc::heap<source::ModuleLoader>()) {}
+CompilerDriver::Impl::Impl() noexcept
+    : loader(zc::heap<source::ModuleLoader>()),
+      sourceManager(zc::heap<source::SourceManager>()),
+      diagnosticEngine(zc::heap<diagnostics::DiagnosticEngine>(*sourceManager)) {}
 
 CompilerDriver::Impl::~Impl() noexcept(false) = default;
 
 zc::Maybe<const source::Module&> CompilerDriver::Impl::addSourceFileImpl(const zc::StringPtr file) {
-  return loader->loadModule(file);
+  uint64_t bufferId = sourceManager->getExternalSourceBufferID(file);
+  const zc::StringPtr moduleName = sourceManager->getIdentifierForBuffer(bufferId);
+  return loader->loadModule(moduleName, bufferId);
 }
 
-// ========== CompilerDriver
+// ================================================================================
+// CompilerDriver
 
 CompilerDriver::CompilerDriver() noexcept : impl(zc::heap<Impl>()) {}
 CompilerDriver::~CompilerDriver() noexcept(false) = default;
