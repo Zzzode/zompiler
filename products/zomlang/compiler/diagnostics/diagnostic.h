@@ -30,7 +30,8 @@ class SourceLoc;
 
 namespace diagnostics {
 
-enum class DiagnosticKind : uint8_t { kNote, kRemark, kWarning, kError, kFatal };
+enum class DiagID : uint32_t;
+enum class DiagSeverity : uint8_t;
 
 struct FixIt {
   source::CharSourceRange range;
@@ -39,8 +40,8 @@ struct FixIt {
 
 class Diagnostic {
 public:
-  Diagnostic(DiagnosticKind kind, uint32_t id, zc::StringPtr message,
-             const source::CharSourceRange& location);
+  template <typename... Args>
+  explicit Diagnostic(DiagID id, source::SourceLoc loc, Args&&... args);
   ~Diagnostic();
 
   Diagnostic(Diagnostic&& other) noexcept;
@@ -48,16 +49,13 @@ public:
 
   ZC_DISALLOW_COPY(Diagnostic);
 
-  ZC_NODISCARD DiagnosticKind getKind() const;
-  ZC_NODISCARD uint32_t getId() const;
-  ZC_NODISCARD zc::StringPtr getMessage() const;
-  ZC_NODISCARD const source::CharSourceRange& getSourceRange() const;
+  ZC_NODISCARD DiagID getId() const;
   ZC_NODISCARD const zc::Vector<zc::Own<Diagnostic>>& getChildDiagnostics() const;
   ZC_NODISCARD const zc::Vector<zc::Own<FixIt>>& getFixIts() const;
+  ZC_NODISCARD const source::SourceLoc& getLoc() const;
 
   void addChildDiagnostic(zc::Own<Diagnostic> child);
   void addFixIt(zc::Own<FixIt> fixIt);
-  void setCategory(zc::StringPtr newCategory);
 
 private:
   struct Impl;

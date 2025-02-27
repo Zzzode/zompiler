@@ -14,35 +14,21 @@
 
 #pragma once
 
-#include "zc/core/common.h"
-#include "zomlang/compiler/diagnostics/diagnostic.h"
+#include <cstdint>
 
 namespace zomlang {
 namespace compiler {
 namespace diagnostics {
 
-class DiagnosticEngine;
+enum class DiagID : uint32_t {
+#define DIAG(Name, ...) Name,
+#include "zomlang/compiler/diagnostics/diagnostics.def"
 
-class InFlightDiagnostic {
-public:
-  InFlightDiagnostic(DiagnosticEngine& engine, Diagnostic&& diag);
-  ~InFlightDiagnostic();
-
-  InFlightDiagnostic(InFlightDiagnostic&& other) noexcept = default;
-  InFlightDiagnostic& operator=(InFlightDiagnostic&& other) noexcept = delete;
-
-  ZC_DISALLOW_COPY(InFlightDiagnostic);
-
-  void emit();
-
-  /// Add methods to modify the diagnostic, for example, add fix-its
-  InFlightDiagnostic& addFixIt(zc::Own<FixIt> fixit);
-
-private:
-  struct Impl;
-  zc::Own<Impl> impl;
-
+#undef DIAG
+  NumDiags
 };
+
+enum class DiagSeverity : uint8_t { Note, Remark, Warning, Error, Fatal };
 
 }  // namespace diagnostics
 }  // namespace compiler

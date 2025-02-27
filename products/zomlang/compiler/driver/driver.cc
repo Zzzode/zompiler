@@ -17,6 +17,8 @@
 #include "zc/core/filesystem.h"
 #include "zomlang/compiler/basic/frontend.h"
 #include "zomlang/compiler/diagnostics/diagnostic-engine.h"
+#include "zomlang/compiler/diagnostics/diagnostic-ids.h"
+#include "zomlang/compiler/diagnostics/in-flight-diagnostic.h"
 #include "zomlang/compiler/source/manager.h"
 #include "zomlang/compiler/source/module.h"
 
@@ -63,9 +65,12 @@ CompilerDriver::Impl::Impl() noexcept
 CompilerDriver::Impl::~Impl() noexcept(false) = default;
 
 zc::Maybe<const source::Module&> CompilerDriver::Impl::addSourceFileImpl(const zc::StringPtr file) {
-  uint64_t bufferId = sourceManager->getExternalSourceBufferID(file);
-  const zc::StringPtr moduleName = sourceManager->getIdentifierForBuffer(bufferId);
-  return loader->loadModule(moduleName, bufferId);
+  ZC_IF_SOME(bufferId, sourceManager->getExternalSourceBufferID(file)) {
+    const zc::StringPtr moduleName = sourceManager->getIdentifierForBuffer(bufferId);
+    return loader->loadModule(moduleName, bufferId);
+  }
+  diagnosticEngine->diagnose<diagnostics::DiagID::InvalidPath>(source::SourceLoc(), file);
+  return zc::none;
 }
 
 // ================================================================================

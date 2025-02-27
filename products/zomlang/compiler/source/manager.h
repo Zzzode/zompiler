@@ -86,17 +86,12 @@ public:
   SourceLoc getLocForLineCol(uint64_t bufferId, unsigned line, unsigned col) const;
 
   // External source support
-  uint64_t getExternalSourceBufferID(zc::StringPtr path);
+  zc::Maybe<uint64_t> getExternalSourceBufferID(zc::StringPtr path);
   SourceLoc getLocFromExternalSource(zc::StringPtr path, unsigned line, unsigned col);
 
   zc::StringPtr getIdentifierForBuffer(uint64_t bufferId);
 
   CharSourceRange getRangeForBuffer(uint64_t bufferId) const;
-
-  // Diagnostics
-  void getMessage(const SourceLoc& loc, diagnostics::DiagnosticKind kind, zc::StringPtr msg,
-                  zc::ArrayPtr<SourceRange> ranges, zc::ArrayPtr<diagnostics::FixIt> fixIts,
-                  zc::OutputStream& os) const;
 
   // Verification
   void verifyAllBuffers() const;

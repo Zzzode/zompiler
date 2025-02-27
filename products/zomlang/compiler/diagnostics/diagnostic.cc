@@ -14,9 +14,14 @@
 
 #include "zomlang/compiler/diagnostics/diagnostic.h"
 
-#include "zc/core/string.h"
+#include "zc/core/debug.h"
 #include "zc/core/vector.h"
+#include "zomlang/compiler/diagnostics/diagnostic-engine.h"
+#include "zomlang/compiler/diagnostics/diagnostic-ids.h"
+#include "zomlang/compiler/diagnostics/diagnostic-info.h"
+#include "zomlang/compiler/lexer/token.h"
 #include "zomlang/compiler/source/location.h"
+#include "zomlang/compiler/source/manager.h"
 
 namespace zomlang {
 namespace compiler {
@@ -26,49 +31,51 @@ namespace diagnostics {
 // Diagnostic::Impl
 
 struct Diagnostic::Impl {
-  Impl(DiagnosticKind kind, uint32_t id, zc::String message,
-       const source::CharSourceRange& location)
-      : kind(kind), id(id), message(zc::mv(message)), location(location) {}
+  friend class Diagnostic;
 
-  DiagnosticKind kind;
-  uint32_t id;
-  zc::String message;
-  source::CharSourceRange location;
-  zc::String category;
+  using Arguments = zc::OneOf<zc::ConstString,    // Str
+                              source::SourceLoc,  // Loc
+                              lexer::Token,       // Token
+                              zc::String          //
+                              >;
+
+  template <typename... Args>
+  explicit Impl(const DiagID id, const source::SourceLoc loc, Args&&... args)
+      : id(id), location(loc), args{zc::fwd<Args>(args)...} {}
+
+  DiagID id;
+  source::SourceLoc location;
+  zc::Vector<Arguments> args;
   zc::Vector<zc::Own<Diagnostic>> childDiagnostics;
   zc::Vector<zc::Own<FixIt>> fixIts;
+  zc::Vector<source::CharSourceRange> ranges;
 };
 
 // ================================================================================
 // Diagnostic
 
-Diagnostic::Diagnostic(DiagnosticKind kind, uint32_t id, zc::StringPtr message,
-                       const source::CharSourceRange& location)
-    : impl(zc::heap<Impl>(kind, id, zc::heapString(message), location)) {}
-
+template <typename... Args>
+Diagnostic::Diagnostic(DiagID id, source::SourceLoc loc, Args&&... args)
+    : impl(zc::heap<Impl>(id, loc, zc::fwd<Args>(args)...)) {}
 Diagnostic::~Diagnostic() = default;
 
 Diagnostic::Diagnostic(Diagnostic&&) noexcept = default;
 Diagnostic& Diagnostic::operator=(Diagnostic&&) noexcept = default;
 
-DiagnosticKind Diagnostic::getKind() const { return impl->kind; }
-uint32_t Diagnostic::getId() const { return impl->id; }
-zc::StringPtr Diagnostic::getMessage() const { return impl->message; }
-const source::CharSourceRange& Diagnostic::getSourceRange() const { return impl->location; }
+DiagID Diagnostic::getId() const { return impl->id; }
+
 const zc::Vector<zc::Own<Diagnostic>>& Diagnostic::getChildDiagnostics() const {
   return impl->childDiagnostics;
 }
+
 const zc::Vector<zc::Own<FixIt>>& Diagnostic::getFixIts() const { return impl->fixIts; }
+const source::SourceLoc& Diagnostic::getLoc() const { return impl->location; }
 
 void Diagnostic::addChildDiagnostic(zc::Own<Diagnostic> child) {
   impl->childDiagnostics.add(zc::mv(child));
 }
 
 void Diagnostic::addFixIt(zc::Own<FixIt> fixIt) { impl->fixIts.add(zc::mv(fixIt)); }
-
-void Diagnostic::setCategory(zc::StringPtr newCategory) {
-  impl->category = zc::heapString(newCategory);
-}
 
 // ================================================================================
 // DiagnosticConsumer::Impl
